@@ -41,15 +41,15 @@
 </c:if>
 <c:if test="${isCluster}">
   <div role="alert" style="background-color: #E0182D; color: #FFFFFF; padding: 15px; margin-bottom: 20px;">
-    <strong>&#9888; Warning:</strong> Be careful when starting indexation. It can take a long time and can be triggered multiple times!
+    <strong><span aria-hidden="true">&#9888;</span> Warning:</strong> Be careful when starting indexation. It can take a long time and can be triggered multiple times!
   </div>
   <h3>The following cluster nodes can be reindexed:</h3>
   <form id="clusterReindexForm" action="${actionUrl}" method="post">
   <table class="table table-bordered table-striped table-sortable" aria-label="Cluster nodes available for reindexing">
      <thead>
         <tr>
-            <th class="headerSortable">Cluster member ID</th>
-            <th class="headerSortable">Action</th>
+            <th class="headerSortable" scope="col">Cluster member ID</th>
+            <th class="headerSortable" scope="col">Action</th>
         </tr>
      </thead>
      <tbody>
@@ -70,7 +70,7 @@
   </table>
   </form>
 </c:if>
-<div id="clusterReindexMsg"></div>
+<div id="clusterReindexMsg" aria-live="polite" aria-atomic="true"></div>
 <script>
 (function($) {
     var lastAction = null;
