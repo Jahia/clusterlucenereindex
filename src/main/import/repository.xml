@@ -5,62 +5,7 @@
                             j:modulePriority="0"
                             j:moduleType="module"
                             j:title="clusterLuceneReindex"
-                            jcr:mixinTypes="jmix:hasExternalProviderExtension"
                             jcr:primaryType="jnt:module">
-         <sources jcr:mixinTypes="jmix:hasExternalProviderExtension"
-                  jcr:primaryType="jnt:moduleVersionFolder"
-                  j:staticMountPointProviderKey="module-clusterlucenereindex-1.0.0-SNAPSHOT">
-            <src jcr:mixinTypes="jmix:hasExternalProviderExtension"
-                 jcr:primaryType="jnt:folder">
-               <main jcr:mixinTypes="jmix:hasExternalProviderExtension"
-                     jcr:primaryType="jnt:folder">
-                  <java jcr:mixinTypes="jmix:hasExternalProviderExtension"
-                        jcr:primaryType="jnt:javaPackageFolder">
-                     <org jcr:mixinTypes="jmix:hasExternalProviderExtension"
-                          jcr:primaryType="jnt:javaPackageFolder">
-                        <jahia jcr:mixinTypes="jmix:hasExternalProviderExtension"
-                               jcr:primaryType="jnt:folder">
-                           <modules jcr:mixinTypes="jmix:hasExternalProviderExtension"
-                                    jcr:primaryType="jnt:javaPackageFolder">
-                              <lucenereindex jcr:mixinTypes="jmix:hasExternalProviderExtension"
-                                             jcr:primaryType="jnt:javaPackageFolder">
-                                 <flow jcr:mixinTypes="jmix:hasExternalProviderExtension"
-                                       jcr:primaryType="jnt:javaPackageFolder">
-                                    <ReindexManager.java jcr:primaryType="jnt:javaSourceFile"/>
-                                 </flow>
-                                 <service jcr:mixinTypes="jmix:hasExternalProviderExtension"
-                                          jcr:primaryType="jnt:javaPackageFolder">
-                                    <ClusterReindexationService.java jcr:primaryType="jnt:javaSourceFile"/>
-                                 </service>
-                              </lucenereindex>
-                           </modules>
-                        </jahia>
-                     </org>
-                  </java>
-                  <resources jcr:mixinTypes="jmix:hasExternalProviderExtension"
-                             jcr:primaryType="jnt:folder">
-                     <jnt_clusterLuceneReindex jcr:mixinTypes="jmix:hasExternalProviderExtension"
-                                               jcr:primaryType="jnt:nodeTypeFolder">
-                        <html jcr:mixinTypes="jmix:hasExternalProviderExtension"
-                              jcr:primaryType="jnt:templateTypeFolder">
-                           <clusterLuceneReindex.flow jcr:mixinTypes="jmix:hasExternalProviderExtension"
-                                                      jcr:primaryType="jnt:folder">
-                              <flow.xml jcr:primaryType="jnt:xmlFile"/>
-                              <reindex.jsp jcr:primaryType="jnt:viewFile"/>
-                           </clusterLuceneReindex.flow>
-                        </html>
-                     </jnt_clusterLuceneReindex>
-                     <META-INF jcr:mixinTypes="jmix:hasExternalProviderExtension"
-                               jcr:primaryType="jnt:metaInfFolder">
-                        <spring jcr:mixinTypes="jmix:hasExternalProviderExtension"
-                                jcr:primaryType="jnt:folder">
-                           <clusterreindex.xml jcr:primaryType="jnt:xmlFile"/>
-                        </spring>
-                     </META-INF>
-                  </resources>
-               </main>
-            </src>
-         </sources>
          <portlets jcr:primaryType="jnt:portletFolder"/>
          <files jcr:primaryType="jnt:folder"/>
          <contents jcr:primaryType="jnt:contentFolder"/>
