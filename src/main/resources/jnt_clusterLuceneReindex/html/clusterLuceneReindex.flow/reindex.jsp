@@ -31,28 +31,36 @@
     <div class="col-md-12">
 
 <c:if test="${not flowModel.cluster}">
-  <p><h3>Current environemnt is no Cluster!</h3></p>
+  <h3>Current environment is not a Cluster.</h3>
 </c:if>
 <c:if test="${flowModel.cluster}">
-  <div style="background-color: #E0182D; color: #FFFFFF; padding: 15px; margin-bottom: 20px;">Be careful to start indexation. It could need long time and could be started multiple times!</div>
-  <h4>Follow clusternodes can be reindexed:</h4>
+  <div role="alert" style="background-color: #E0182D; color: #FFFFFF; padding: 15px; margin-bottom: 20px;">
+    <strong>&#9888; Warning:</strong> Be careful when starting indexation. It can take a long time and can be triggered multiple times!
+  </div>
+  <h3>The following cluster nodes can be reindexed:</h3>
   <form action="${flowExecutionUrl}" method="post">
-  <table class="table table-bordered table-striped table-sortable">
+  <table class="table table-bordered table-striped table-sortable" aria-label="Cluster nodes available for reindexing">
      <thead>
-                        <tr>
-
-                            <th class="headerSortable">Cluster member ID</th>
-                            <th class="headerSortable">Action</th>
-                            </tr>
-
-                        </thead>
+        <tr>
+            <th class="headerSortable">Cluster member ID</th>
+            <th class="headerSortable">Action</th>
+        </tr>
+     </thead>
+     <tbody>
   <c:forEach var="node" items="${flowModel.clusterNodes}" varStatus="nodeStatus">
-    <tr><td>${node.id} </td><td>
-      <button type="submit" name="_eventId_addreindex" value="${node.id}" class="btn btn-default btn-raised">Reindex</button></td>
+    <tr>
+      <td>${node.id}</td>
+      <td>
+        <button type="submit" name="_eventId_addreindex" value="${node.id}" class="btn btn-default btn-raised" aria-label="Reindex ${node.id}">Reindex</button>
+      </td>
     </tr>
   </c:forEach>
     <tr>
-      <td colspan="2" align="right"><button type="submit" name="_eventId_reindexfull" value="${node.id}" class="btn btn-default btn-raised">Reindex all available cluster nodes</button></td></tr>
+      <td colspan="2" style="text-align: right;">
+        <button type="submit" name="_eventId_reindexfull" class="btn btn-default btn-raised">Reindex all available cluster nodes</button>
+      </td>
+    </tr>
+     </tbody>
     </table>
   </form>
   
