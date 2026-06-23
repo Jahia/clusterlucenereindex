@@ -104,7 +104,7 @@ public class ClusterReindexationService {
                                 if (node.getProperty("nodeId").getString().equals(currentId)) {
                                     logger.info("Reindex started on node {}", currentId);
                                     node.remove();
-                                    node.saveSession();
+                                    session.save();
                                     ((JahiaRepositoryImpl) ((SpringJackrabbitRepository) JCRSessionFactory
                                             .getInstance().getDefaultProvider().getRepository())
                                             .getRepository()).scheduleReindexing();

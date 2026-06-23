@@ -4,6 +4,7 @@
 <%@ page import="org.jahia.services.render.RenderContext" %>
 <%@ page import="org.jahia.services.content.JCRNodeWrapper" %>
 <%@ taglib prefix="c" uri="http://java.sun.com/jsp/jstl/core" %>
+<%@ taglib prefix="fn" uri="http://java.sun.com/jsp/jstl/functions" %>
 <%--@elvariable id="currentNode" type="org.jahia.services.content.JCRNodeWrapper"--%>
 <%--@elvariable id="renderContext" type="org.jahia.services.render.RenderContext"--%>
 <%--@elvariable id="workspace" type="java.lang.String"--%>
@@ -27,6 +28,13 @@
             + nodePath
             + ".clusterReindex.do";
     pageContext.setAttribute("actionUrl", actionUrl);
+
+    String csrfToken = (String) session.getAttribute("clusterReindex.csrf");
+    if (csrfToken == null) {
+        csrfToken = java.util.UUID.randomUUID().toString();
+        session.setAttribute("clusterReindex.csrf", csrfToken);
+    }
+    pageContext.setAttribute("csrfToken", csrfToken);
 %>
 
 <div class="page-header">
@@ -45,6 +53,7 @@
   </div>
   <h3>The following cluster nodes can be reindexed:</h3>
   <form id="clusterReindexForm" action="${actionUrl}" method="post">
+  <input type="hidden" id="csrfTokenField" value="${csrfToken}"/>
   <table class="table table-bordered table-striped table-sortable" aria-label="Cluster nodes available for reindexing">
      <thead>
         <tr>
@@ -55,9 +64,9 @@
      <tbody>
   <c:forEach var="node" items="${clusterNodes}">
     <tr>
-      <td>${node.id}</td>
+      <td><c:out value="${node.id}" escapeXml="true"/></td>
       <td>
-        <button type="submit" name="action" value="addreindex:${node.id}" class="btn btn-default btn-raised" aria-label="Reindex ${node.id}">Reindex</button>
+        <button type="submit" name="action" value="addreindex:${fn:escapeXml(node.id)}" class="btn btn-default btn-raised" aria-label="Reindex ${fn:escapeXml(node.id)}">Reindex</button>
       </td>
     </tr>
   </c:forEach>
@@ -80,7 +89,7 @@
     $('#clusterReindexForm').on('submit', function(e) {
         e.preventDefault();
         var $msg = $('#clusterReindexMsg').empty();
-        $.post($(this).attr('action'), {action: lastAction || ''})
+        $.post($(this).attr('action'), {action: lastAction || '', csrfToken: $('#csrfTokenField').val()})
             .done(function() {
                 $msg.html('<div class="alert alert-success" role="status">Reindex successfully triggered.</div>');
             })

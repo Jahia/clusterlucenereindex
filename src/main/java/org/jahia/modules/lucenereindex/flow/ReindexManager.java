@@ -1,6 +1,7 @@
 package org.jahia.modules.lucenereindex.flow;
 
 import java.util.HashSet;
+import java.util.UUID;
 
 import javax.jcr.RepositoryException;
 
@@ -69,7 +70,7 @@ public class ReindexManager {
                         }
                     }
                     JCRNodeWrapper indexNode = admin.addNode(
-                            "reindex" + System.currentTimeMillis(), "jnt:nodeToReindex");
+                            "reindex" + UUID.randomUUID().toString().replace("-", ""), "jnt:nodeToReindex");
                     indexNode.setProperty("nodeId", nodeId);
                     indexNode.saveSession();
                     return null;
@@ -101,7 +102,7 @@ public class ReindexManager {
                             }
                         }
                         JCRNodeWrapper indexNode = admin.addNode(
-                                "reindex" + System.currentTimeMillis(), "jnt:nodeToReindex");
+                                "reindex" + UUID.randomUUID().toString().replace("-", ""), "jnt:nodeToReindex");
                         indexNode.setProperty("nodeId", nodeToReindex);
                         indexNode.saveSession();
                         return null;
