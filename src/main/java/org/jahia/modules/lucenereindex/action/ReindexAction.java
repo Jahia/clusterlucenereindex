@@ -30,6 +30,11 @@ public class ReindexAction extends Action {
     @Activate
     public void activate() {
         setName("clusterReindex");
+        // Triggering a (cluster-wide) Lucene reindex is a heavy, privileged
+        // operation. Gate the action with the same server-administration
+        // permission that guards the settings UI, so the Jahia dispatcher denies
+        // any non-admin caller (the UI-side checks only hide the button).
+        setRequiredPermission("adminUsers");
     }
 
     @Override
@@ -49,7 +54,7 @@ public class ReindexAction extends Action {
         String action = actionValues.get(0);
 
         if (action.startsWith("addreindex:")) {
-            String nodeId = action.substring("addreindex:".length());
+            String nodeId = action.substring("addreindex:".length()).trim();
             if (nodeId.isEmpty()) {
                 logger.warn("ReindexAction: addreindex received empty nodeId");
                 return ActionResult.BAD_REQUEST;
