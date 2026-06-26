@@ -59,7 +59,9 @@ public class ClusterReindexationService {
                 thread.setDaemon(true);
                 return thread;
             });
-            watchdog.scheduleWithFixedDelay(this::runReindexCheck, scanInterval, scanInterval, TimeUnit.MILLISECONDS);
+            // Initial delay 0: run the first check immediately on activation (matching the
+            // previous Timer behaviour), then every scanInterval ms thereafter.
+            watchdog.scheduleWithFixedDelay(this::runReindexCheck, 0L, scanInterval, TimeUnit.MILLISECONDS);
             logger.info("ClusterReindexationService activated with scan interval {}ms", scanInterval);
         } catch (RepositoryException ex) {
             logger.error("Indexer couldn't be initialized!", ex);

@@ -49,7 +49,7 @@ public class ReindexAction extends Action {
                                   URLResolver urlResolver) throws Exception {
 
         JahiaUser user = renderContext.getUser();
-        if (JahiaUserManagerService.isGuest(user) || !user.isAdminMember(0)) {
+        if (user == null || JahiaUserManagerService.isGuest(user) || !user.isAdminMember(0)) {
             logger.warn("Unauthorized clusterReindex attempt by user: {}",
                     user != null ? user.getUsername() : "anonymous");
             return new ActionResult(HttpServletResponse.SC_FORBIDDEN, null, new JSONObject());

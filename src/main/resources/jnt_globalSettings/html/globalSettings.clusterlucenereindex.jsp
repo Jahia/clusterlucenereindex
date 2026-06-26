@@ -15,7 +15,7 @@
 
     ReindexManager reindexManager = BundleUtils.getOsgiService(ReindexManager.class, null);
     boolean isCluster = reindexManager != null && reindexManager.isCluster();
-    java.util.HashSet clusterNodes = isCluster ? reindexManager.getClusterNodes() : null;
+    java.util.Set<Object> clusterNodes = isCluster ? reindexManager.getClusterNodes() : null;
     pageContext.setAttribute("isCluster", isCluster);
     pageContext.setAttribute("clusterNodes", clusterNodes);
 
@@ -53,7 +53,7 @@
   </div>
   <h3>The following cluster nodes can be reindexed:</h3>
   <form id="clusterReindexForm" action="${actionUrl}" method="post">
-  <input type="hidden" id="csrfTokenField" value="${csrfToken}"/>
+  <input type="hidden" id="csrfTokenField" value="${fn:escapeXml(csrfToken)}"/>
   <table class="table table-bordered table-striped table-sortable" aria-label="Cluster nodes available for reindexing">
      <thead>
         <tr>
@@ -97,6 +97,7 @@
         }
         // A reindex is heavy and cluster-wide: confirm before triggering it.
         if (!window.confirm('Start the Lucene reindexation now? This can take a long time on a large repository.')) {
+            lastAction = null;
             return;
         }
         var $buttons = $form.find('button[type="submit"]').prop('disabled', true);
