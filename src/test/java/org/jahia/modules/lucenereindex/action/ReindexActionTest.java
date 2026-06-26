@@ -13,8 +13,6 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
-import javax.servlet.http.HttpServletRequest;
-
 import org.jahia.bin.ActionResult;
 import org.jahia.modules.lucenereindex.flow.ReindexManager;
 import org.junit.Before;
@@ -23,13 +21,11 @@ import org.junit.Test;
 public class ReindexActionTest {
 
     private ReindexManager reindexManager;
-    private HttpServletRequest request;
     private ReindexAction action;
 
     @Before
     public void setUp() throws Exception {
         reindexManager = mock(ReindexManager.class);
-        request = mock(HttpServletRequest.class);
         action = new ReindexAction();
         injectReindexManager(action, reindexManager);
     }
@@ -48,10 +44,10 @@ public class ReindexActionTest {
         return parameters;
     }
 
-    private ActionResult execute(Map<String, List<String>> parameters) throws Exception {
-        // The render context, resource, session and URL resolver arguments are not read by
-        // the method under test, so null is passed to avoid heavy Jahia class initialisation.
-        return action.doExecute(request, null, null, null, parameters, null);
+    private ActionResult execute(Map<String, List<String>> parameters) {
+        // Target the package-private dispatch directly. The authorization and CSRF gates in
+        // doExecute belong to integration scope and are not exercised by these unit tests.
+        return action.handleAction(parameters);
     }
 
     @Test

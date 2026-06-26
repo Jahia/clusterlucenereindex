@@ -28,6 +28,13 @@
             + nodePath
             + ".clusterReindex.do";
     pageContext.setAttribute("actionUrl", actionUrl);
+
+    String csrfToken = (String) session.getAttribute("clusterReindex.csrf");
+    if (csrfToken == null) {
+        csrfToken = java.util.UUID.randomUUID().toString();
+        session.setAttribute("clusterReindex.csrf", csrfToken);
+    }
+    pageContext.setAttribute("csrfToken", csrfToken);
 %>
 
 <div class="page-header">
@@ -46,6 +53,7 @@
   </div>
   <h3>The following cluster nodes can be reindexed:</h3>
   <form id="clusterReindexForm" action="${actionUrl}" method="post">
+  <input type="hidden" id="csrfTokenField" value="${csrfToken}"/>
   <table class="table table-bordered table-striped table-sortable" aria-label="Cluster nodes available for reindexing">
      <thead>
         <tr>
@@ -56,7 +64,7 @@
      <tbody>
   <c:forEach var="node" items="${clusterNodes}">
     <tr>
-      <td>${fn:escapeXml(node.id)}</td>
+      <td><c:out value="${node.id}" escapeXml="true"/></td>
       <td>
         <button type="submit" name="action" value="addreindex:${fn:escapeXml(node.id)}" class="btn btn-default btn-raised" aria-label="Reindex cluster node ${fn:escapeXml(node.id)}">Reindex</button>
       </td>
@@ -94,7 +102,7 @@
         var $buttons = $form.find('button[type="submit"]').prop('disabled', true);
         var $msg = $('#clusterReindexMsg')
             .html('<div class="alert alert-info">Reindexation requested, please wait...</div>');
-        $.post($form.attr('action'), {action: action})
+        $.post($form.attr('action'), {action: action, csrfToken: $('#csrfTokenField').val()})
             .done(function() {
                 $msg.html('<div class="alert alert-success">Reindex successfully triggered.</div>');
             })

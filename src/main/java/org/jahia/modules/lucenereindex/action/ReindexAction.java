@@ -4,6 +4,7 @@ import java.util.List;
 import java.util.Map;
 
 import javax.servlet.http.HttpServletRequest;
+import javax.servlet.http.HttpServletResponse;
 
 import org.jahia.bin.Action;
 import org.jahia.bin.ActionResult;
@@ -12,6 +13,8 @@ import org.jahia.services.content.JCRSessionWrapper;
 import org.jahia.services.render.RenderContext;
 import org.jahia.services.render.Resource;
 import org.jahia.services.render.URLResolver;
+import org.jahia.services.usermanager.JahiaUser;
+import org.jahia.services.usermanager.JahiaUserManagerService;
 import org.json.JSONObject;
 import org.osgi.service.component.annotations.Activate;
 import org.osgi.service.component.annotations.Component;
@@ -45,6 +48,29 @@ public class ReindexAction extends Action {
                                   Map<String, List<String>> parameters,
                                   URLResolver urlResolver) throws Exception {
 
+        JahiaUser user = renderContext.getUser();
+        if (JahiaUserManagerService.isGuest(user) || !user.isAdminMember(0)) {
+            logger.warn("Unauthorized clusterReindex attempt by user: {}",
+                    user != null ? user.getUsername() : "anonymous");
+            return new ActionResult(HttpServletResponse.SC_FORBIDDEN, null, new JSONObject());
+        }
+
+        String csrfParam = req.getParameter("csrfToken");
+        String csrfSession = (String) req.getSession().getAttribute("clusterReindex.csrf");
+        if (csrfParam == null || csrfSession == null || !csrfParam.equals(csrfSession)) {
+            logger.warn("CSRF token mismatch for clusterReindex");
+            return new ActionResult(HttpServletResponse.SC_FORBIDDEN, null, new JSONObject());
+        }
+
+        return handleAction(parameters);
+    }
+
+    /**
+     * Dispatches the validated {@code action} parameter to the reindex manager. Extracted
+     * (package-private) from {@link #doExecute} so the parsing/dispatch contract can be
+     * unit-tested without the servlet/authorization/CSRF plumbing.
+     */
+    ActionResult handleAction(Map<String, List<String>> parameters) {
         List<String> actionValues = parameters.get("action");
         if (actionValues == null || actionValues.isEmpty()) {
             logger.warn("ReindexAction called without 'action' parameter");
