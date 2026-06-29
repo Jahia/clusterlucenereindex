@@ -15,7 +15,7 @@
 
     ReindexManager reindexManager = BundleUtils.getOsgiService(ReindexManager.class, null);
     boolean isCluster = reindexManager != null && reindexManager.isCluster();
-    java.util.HashSet clusterNodes = isCluster ? reindexManager.getClusterNodes() : null;
+    java.util.Set<Object> clusterNodes = isCluster ? reindexManager.getClusterNodes() : null;
     pageContext.setAttribute("isCluster", isCluster);
     pageContext.setAttribute("clusterNodes", clusterNodes);
 
@@ -45,15 +45,15 @@
     <div class="col-md-12">
 
 <c:if test="${not isCluster}">
-  <h3>Current environment is not a Cluster.</h3>
+  <p>Current environment is not a Cluster.</p>
 </c:if>
 <c:if test="${isCluster}">
-  <div role="alert" style="background-color: #E0182D; color: #FFFFFF; padding: 15px; margin-bottom: 20px;">
+  <div role="note" style="background-color: #8b0000; color: #ffffff; padding: 15px; margin-bottom: 20px;">
     <strong><span aria-hidden="true">&#9888;</span> Warning:</strong> Be careful when starting indexation. It can take a long time and can be triggered multiple times!
   </div>
   <h3>The following cluster nodes can be reindexed:</h3>
   <form id="clusterReindexForm" action="${actionUrl}" method="post">
-  <input type="hidden" id="csrfTokenField" value="${csrfToken}"/>
+  <input type="hidden" id="csrfTokenField" value="${fn:escapeXml(csrfToken)}"/>
   <table class="table table-bordered table-striped table-sortable" aria-label="Cluster nodes available for reindexing">
      <thead>
         <tr>
@@ -66,7 +66,7 @@
     <tr>
       <td><c:out value="${node.id}" escapeXml="true"/></td>
       <td>
-        <button type="submit" name="action" value="addreindex:${fn:escapeXml(node.id)}" class="btn btn-default btn-raised" aria-label="Reindex ${fn:escapeXml(node.id)}">Reindex</button>
+        <button type="submit" name="action" value="addreindex:${fn:escapeXml(node.id)}" class="btn btn-default btn-raised" aria-label="Reindex cluster node ${fn:escapeXml(node.id)}">Reindex</button>
       </td>
     </tr>
   </c:forEach>
@@ -82,19 +82,37 @@
 <div id="clusterReindexMsg" aria-live="polite" aria-atomic="true"></div>
 <script>
 (function($) {
+    var $form = $('#clusterReindexForm');
     var lastAction = null;
-    $('#clusterReindexForm button[type="submit"]').on('click', function() {
+    $form.find('button[type="submit"]').on('click', function() {
         lastAction = $(this).val();
     });
-    $('#clusterReindexForm').on('submit', function(e) {
+    $form.on('submit', function(e) {
         e.preventDefault();
-        var $msg = $('#clusterReindexMsg').empty();
-        $.post($(this).attr('action'), {action: lastAction || '', csrfToken: $('#csrfTokenField').val()})
+        // Fall back to the submitter button when the form is submitted via the keyboard.
+        var action = lastAction
+            || (e.originalEvent && e.originalEvent.submitter ? e.originalEvent.submitter.value : '');
+        if (!action) {
+            return;
+        }
+        // A reindex is heavy and cluster-wide: confirm before triggering it.
+        if (!window.confirm('Start the Lucene reindexation now? This can take a long time on a large repository.')) {
+            lastAction = null;
+            return;
+        }
+        var $buttons = $form.find('button[type="submit"]').prop('disabled', true);
+        var $msg = $('#clusterReindexMsg')
+            .html('<div class="alert alert-info">Reindexation requested, please wait...</div>');
+        $.post($form.attr('action'), {action: action, csrfToken: $('#csrfTokenField').val()})
             .done(function() {
-                $msg.html('<div class="alert alert-success" role="status">Reindex successfully triggered.</div>');
+                $msg.html('<div class="alert alert-success">Reindex successfully triggered.</div>');
             })
             .fail(function(xhr) {
-                $msg.html('<div class="alert alert-danger" role="alert">Error (' + xhr.status + '): failed to trigger reindex.</div>');
+                $msg.html('<div class="alert alert-danger">Error (' + xhr.status + '): failed to trigger reindex.</div>');
+            })
+            .always(function() {
+                $buttons.prop('disabled', false);
+                lastAction = null;
             });
     });
 })(jQuery);

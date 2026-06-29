@@ -1,11 +1,11 @@
 package org.jahia.modules.lucenereindex.service;
 
-import java.util.Timer;
-import java.util.TimerTask;
+import java.util.concurrent.Executors;
+import java.util.concurrent.ScheduledExecutorService;
+import java.util.concurrent.TimeUnit;
 
 import javax.jcr.RepositoryException;
 
-import org.apache.commons.lang.reflect.MethodUtils;
 import org.apache.jackrabbit.core.JahiaRepositoryImpl;
 import org.jahia.modules.lucenereindex.flow.ReindexManager;
 import org.jahia.services.content.JCRCallback;
@@ -38,8 +38,9 @@ public class ClusterReindexationService {
     private static final Logger logger = LoggerFactory.getLogger(ClusterReindexationService.class);
 
     private static final String NODE_PATH = "/settings/reindexAdmin";
+    private static final String PROP_NODE_ID = "nodeId";
 
-    private Timer watchdog;
+    private ScheduledExecutorService watchdog;
 
     @Reference
     private ReindexManager reindexManager;
@@ -53,13 +54,14 @@ public class ClusterReindexationService {
         try {
             initializeJCRNode();
             long scanInterval = config.scanInterval();
-            watchdog = new Timer(true);
-            watchdog.schedule(new TimerTask() {
-                @Override
-                public void run() {
-                    performReindexCheck();
-                }
-            }, 0, scanInterval);
+            watchdog = Executors.newSingleThreadScheduledExecutor(runnable -> {
+                Thread thread = new Thread(runnable, "cluster-lucene-reindex-watchdog");
+                thread.setDaemon(true);
+                return thread;
+            });
+            // Initial delay 0: run the first check immediately on activation (matching the
+            // previous Timer behaviour), then every scanInterval ms thereafter.
+            watchdog.scheduleWithFixedDelay(this::runReindexCheck, 0L, scanInterval, TimeUnit.MILLISECONDS);
             logger.info("ClusterReindexationService activated with scan interval {}ms", scanInterval);
         } catch (RepositoryException ex) {
             logger.error("Indexer couldn't be initialized!", ex);
@@ -69,57 +71,78 @@ public class ClusterReindexationService {
     @Deactivate
     public void deactivate() {
         if (watchdog != null) {
-            watchdog.cancel();
+            watchdog.shutdownNow();
             watchdog = null;
         }
         logger.info("ClusterReindexationService deactivated");
     }
 
+    /**
+     * Wraps the periodic check so that NO exception escapes to the executor.
+     * A {@link ScheduledExecutorService} silently cancels all future runs of a
+     * task that throws, so swallowing-and-logging here keeps the watchdog alive.
+     */
+    private void runReindexCheck() {
+        try {
+            performReindexCheck();
+        } catch (Exception ex) { // NOSONAR - the watchdog must survive any single failed check
+            logger.error("Reindex check failed", ex);
+        }
+    }
+
     private void initializeJCRNode() throws RepositoryException {
-        JCRTemplate.getInstance().doExecuteWithSystemSession(new JCRCallback() {
-            @Override
-            public Object doInJCR(JCRSessionWrapper session) throws RepositoryException {
-                if (!session.nodeExists(NODE_PATH)) {
-                    JCRNodeWrapper settingsNode = session.getNode("/settings");
-                    JCRNodeWrapper adminNode = settingsNode.addNode("reindexAdmin", "jnt:reindexAdminInfo");
-                    adminNode.saveSession();
-                }
-                return null;
+        JCRTemplate.getInstance().doExecuteWithSystemSession((JCRCallback<Object>) session -> {
+            if (!session.nodeExists(NODE_PATH)) {
+                JCRNodeWrapper settingsNode = session.getNode("/settings");
+                JCRNodeWrapper adminNode = settingsNode.addNode("reindexAdmin", "jnt:reindexAdminInfo");
+                adminNode.saveSession();
             }
+            return null;
         });
     }
 
-    private void performReindexCheck() {
+    private void performReindexCheck() throws RepositoryException {
         logger.debug("Start Perform reindex check");
-        try {
-            JCRTemplate.getInstance().doExecuteWithSystemSession(new JCRCallback() {
-                @Override
-                public Object doInJCR(JCRSessionWrapper session) throws RepositoryException {
-                    try {
-                        String currentId = (String) MethodUtils.invokeExactMethod(
-                                reindexManager.getLocalClusterNode(), "getId", null);
-                        JCRNodeWrapper admin = session.getNode(NODE_PATH);
-                        if (admin.hasNodes()) {
-                            for (JCRNodeWrapper node : admin.getNodes()) {
-                                if (node.getProperty("nodeId").getString().equals(currentId)) {
-                                    logger.info("Reindex started on node {}", currentId);
-                                    node.remove();
-                                    session.save();
-                                    ((JahiaRepositoryImpl) ((SpringJackrabbitRepository) JCRSessionFactory
-                                            .getInstance().getDefaultProvider().getRepository())
-                                            .getRepository()).scheduleReindexing();
-                                    return null;
-                                }
-                            }
-                        }
-                    } catch (Exception ex) {
-                        logger.error("reindex perform has error", ex);
-                    }
-                    return null;
+        final String currentId = reindexManager.getLocalClusterId();
+        if (currentId == null) {
+            logger.debug("Local cluster node id unavailable, skipping reindex check");
+            return;
+        }
+        Boolean scheduled = JCRTemplate.getInstance().doExecuteWithSystemSession((JCRCallback<Boolean>) session -> {
+            // Read a fresh, cluster-replicated view of the queue before claiming.
+            session.refresh(false);
+            JCRNodeWrapper admin = session.getNode(NODE_PATH);
+            for (JCRNodeWrapper node : admin.getNodes()) {
+                if (node.getProperty(PROP_NODE_ID).getString().equals(currentId)) {
+                    return claimAndReindex(session, node, currentId);
                 }
-            });
-        } catch (RepositoryException ex) {
-            logger.error("Check of reindexation failed", ex);
+            }
+            return Boolean.FALSE;
+        });
+        if (Boolean.TRUE.equals(scheduled)) {
+            logger.debug("Reindexation was scheduled for the current cluster node");
+        }
+    }
+
+    private Boolean claimAndReindex(JCRSessionWrapper session, JCRNodeWrapper node, String currentId)
+            throws RepositoryException {
+        logger.info("Reindex started on node {}", currentId);
+        // Schedule the local reindex FIRST and only drop the queue entry once it
+        // has been triggered, so a failure here does not silently lose the request.
+        scheduleLocalReindexing();
+        node.remove();
+        session.save();
+        return Boolean.TRUE;
+    }
+
+    private void scheduleLocalReindexing() throws RepositoryException {
+        Object repository = ((SpringJackrabbitRepository) JCRSessionFactory.getInstance()
+                .getDefaultProvider().getRepository()).getRepository();
+        if (repository instanceof JahiaRepositoryImpl) {
+            ((JahiaRepositoryImpl) repository).scheduleReindexing();
+        } else {
+            logger.error("Unexpected repository implementation {} - cannot schedule reindexing",
+                    repository != null ? repository.getClass().getName() : "null");
         }
     }
 }
