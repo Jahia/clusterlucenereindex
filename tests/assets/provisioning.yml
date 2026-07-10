@@ -1,0 +1,2 @@
+- karafCommand: "log:log 'START - clusterlucenereindex test provisioning'"
+- karafCommand: "log:log 'END - clusterlucenereindex test provisioning'"

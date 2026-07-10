@@ -1,0 +1,54 @@
+{
+  "name": "clusterlucenereindex-cypress",
+  "version": "1.0.0",
+  "description": "Cypress tests for the clusterLuceneReindex Jahia module",
+  "devDependencies": {
+    "@jahia/cypress": "^7.0.0",
+    "@jahia/eslint-config": "^2.1.2",
+    "@typescript-eslint/eslint-plugin": "^5.2.0",
+    "@typescript-eslint/parser": "^5.2.0",
+    "cypress": "15.13.1",
+    "cypress-multi-reporters": "^1.6.3",
+    "cypress-terminal-report": "^5.3.7",
+    "dotenv": "^10.0.0",
+    "eslint": "^8.51.0",
+    "eslint-config-prettier": "^8.3.0",
+    "eslint-plugin-chai-friendly": "^0.7.2",
+    "eslint-plugin-cypress": "^2.15.1",
+    "eslint-plugin-import": "^2.25.2",
+    "eslint-plugin-jest": "^27.2.1",
+    "eslint-plugin-n": "^15.0.0",
+    "eslint-plugin-prettier": "^4.0.0",
+    "eslint-plugin-promise": "^6.0.0",
+    "eslint-plugin-react": "^7.32.2",
+    "eslint-plugin-react-hooks": "^4.6.0",
+    "jahia-reporter": "^0.4.2",
+    "mocha": "^10.0.0",
+    "mocha-junit-reporter": "^2.2.0",
+    "mochawesome": "^7.1.4",
+    "mochawesome-merge": "^4.2.0",
+    "mochawesome-report-generator": "^6.3.2",
+    "prettier": "^2.0.0",
+    "typescript": "^4.4.4"
+  },
+  "scripts": {
+    "e2e:ci": "cypress run",
+    "e2e:debug": "cypress open",
+    "lint": "eslint . -c .eslintrc.json --ext .ts",
+    "lint:fix": "yarn lint --fix",
+    "report:merge": "mochawesome-merge results/reports/cypress*.json > results/reports/report.json && rm results/reports/cypress*.json",
+    "report:html": "marge --inline results/reports/report.json --reportDir results/reports/"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/Jahia/clusterlucenereindex.git",
+    "directory": "tests"
+  },
+  "author": "",
+  "license": "SEE LICENSE IN LICENSE.txt",
+  "bugs": {
+    "url": "https://github.com/Jahia/clusterlucenereindex/issues"
+  },
+  "homepage": "https://github.com/Jahia/clusterlucenereindex#readme",
+  "packageManager": "yarn@1.22.22+sha512.a6b2f7906b721bba3d67d4aff083df04dad64c399707841b7acf00f6b133b7ac24255f2652fa22ae3534329dc6180534e98d17432037ff6fd140556e2bb3137e"
+}
