@@ -12,6 +12,10 @@ updates:
       # The Jahia parent and org.jahia.* artifacts define the target Jahia version
       - dependency-name: "org.jahia.*"
       - dependency-name: "org.jahia.*:*"
+      # OSGi spec artifacts: never take org.osgi.service.component.annotations 1.5.x (#4).
+      # bnd would emit `osgi.extender;osgi.component;version>=1.5`, and Jahia 8.2 ships
+      # Felix SCR 2.1.30 (DS 1.4), so the bundle would not resolve.
+      - dependency-name: "org.osgi:*"
 
   - package-ecosystem: "npm"
     directory: "/tests"
