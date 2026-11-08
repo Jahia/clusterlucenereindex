@@ -26,6 +26,10 @@ updates:
         patterns:
           - "*"
     ignore:
+      # @jahia/eslint-config 2.2.0 makes the Yarn 1 install abort ("could not find a copy of eslint to link"),
+      # so the tests image installs nothing (2026-11 e2e).
+      - dependency-name: "@jahia/eslint-config"
+        versions: ["2.2.0"]
       # cross-fetch >= 3.2.0 hands back an unbound window.fetch; under @jahia/cypress 7 the e2e
       # GraphQL calls then fail with "TypeError: Illegal invocation" (2026-11 e2e runs). Stay on
       # 3.1.x until this harness moves to @jahia/cypress 8, where cross-fetch 4 works.
