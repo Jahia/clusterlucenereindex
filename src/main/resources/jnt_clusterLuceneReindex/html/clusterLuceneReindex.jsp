@@ -53,6 +53,13 @@
   <h3>The following cluster nodes can be reindexed:</h3>
   <form id="clusterReindexForm" action="${actionUrl}" method="post">
   <input type="hidden" id="csrfTokenField" value="${fn:escapeXml(csrfToken)}"/>
+  <div class="checkbox">
+    <label for="checkConsistencyField" style="min-height: 44px; display: inline-flex; align-items: center; gap: 8px;">
+      <input type="checkbox" id="checkConsistencyField" name="checkConsistency" value="true" aria-describedby="checkConsistencyHelp" style="position: static; margin: 0; width: 24px; height: 24px;"/>
+      Run a repository consistency check after the reindexation
+    </label>
+    <p id="checkConsistencyHelp" class="help-block" style="color: #333333;">Off by default. On a large repository, the consistency check can take much longer than the reindexation itself.</p>
+  </div>
   <table class="table table-bordered table-striped table-sortable" aria-label="Cluster nodes available for reindexing">
      <thead>
         <tr>
@@ -95,14 +102,22 @@
             return;
         }
         // A reindex is heavy and cluster-wide: confirm before triggering it.
-        if (!window.confirm('Start the Lucene reindexation now? This can take a long time on a large repository.')) {
+        var checkConsistency = $('#checkConsistencyField').is(':checked');
+        var question = checkConsistency
+            ? 'Start the Lucene reindexation now, WITH a repository consistency check? The check can take much longer than the reindexation.'
+            : 'Start the Lucene reindexation now, without a consistency check? This can take a long time on a large repository.';
+        if (!window.confirm(question)) {
             lastAction = null;
             return;
         }
-        var $buttons = $form.find('button[type="submit"]').prop('disabled', true);
+        var $buttons = $form.find('button[type="submit"], #checkConsistencyField').prop('disabled', true);
         var $msg = $('#clusterReindexMsg')
             .html('<div class="alert alert-info">Reindexation requested, please wait...</div>');
-        $.post($form.attr('action'), {action: action, csrfToken: $('#csrfTokenField').val()})
+        $.post($form.attr('action'), {
+            action: action,
+            csrfToken: $('#csrfTokenField').val(),
+            checkConsistency: checkConsistency ? 'true' : 'false'
+        })
             .done(function() {
                 $msg.html('<div class="alert alert-success">Reindex successfully triggered.</div>');
             })

@@ -1,6 +1,7 @@
 package org.jahia.modules.lucenereindex.action;
 
 import static org.junit.Assert.assertEquals;
+import static org.mockito.ArgumentMatchers.anyBoolean;
 import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.never;
@@ -44,6 +45,12 @@ public class ReindexActionTest {
         return parameters;
     }
 
+    private Map<String, List<String>> params(String actionValue, String checkConsistency) {
+        Map<String, List<String>> parameters = params(actionValue);
+        parameters.put("checkConsistency", Collections.singletonList(checkConsistency));
+        return parameters;
+    }
+
     private ActionResult execute(Map<String, List<String>> parameters) {
         // Target the package-private dispatch directly. The authorization and CSRF gates in
         // doExecute belong to integration scope and are not exercised by these unit tests.
@@ -54,7 +61,7 @@ public class ReindexActionTest {
     public void addReindexWithNodeId_callsPutNodeForReindexAndReturns200() throws Exception {
         ActionResult result = execute(params("addreindex:node123"));
 
-        verify(reindexManager, times(1)).putNodeForReindex("node123");
+        verify(reindexManager, times(1)).putNodeForReindex("node123", false);
         assertEquals(200, result.getResultCode());
     }
 
@@ -62,7 +69,7 @@ public class ReindexActionTest {
     public void addReindexWithEmptyNodeId_returnsBadRequestAndDoesNotCallManager() throws Exception {
         ActionResult result = execute(params("addreindex:"));
 
-        verify(reindexManager, never()).putNodeForReindex(anyString());
+        verify(reindexManager, never()).putNodeForReindex(anyString(), anyBoolean());
         assertEquals(ActionResult.BAD_REQUEST.getResultCode(), result.getResultCode());
     }
 
@@ -70,7 +77,7 @@ public class ReindexActionTest {
     public void addReindexWithWhitespaceNodeId_returnsBadRequestAndDoesNotCallManager() throws Exception {
         ActionResult result = execute(params("addreindex:   "));
 
-        verify(reindexManager, never()).putNodeForReindex(anyString());
+        verify(reindexManager, never()).putNodeForReindex(anyString(), anyBoolean());
         assertEquals(ActionResult.BAD_REQUEST.getResultCode(), result.getResultCode());
     }
 
@@ -78,7 +85,7 @@ public class ReindexActionTest {
     public void reindexFull_callsReindexFullAndReturns200() throws Exception {
         ActionResult result = execute(params("reindexfull"));
 
-        verify(reindexManager, times(1)).reindexFull();
+        verify(reindexManager, times(1)).reindexFull(false);
         assertEquals(200, result.getResultCode());
     }
 
@@ -86,8 +93,8 @@ public class ReindexActionTest {
     public void missingActionParameter_returnsBadRequest() throws Exception {
         ActionResult result = execute(params(null));
 
-        verify(reindexManager, never()).putNodeForReindex(anyString());
-        verify(reindexManager, never()).reindexFull();
+        verify(reindexManager, never()).putNodeForReindex(anyString(), anyBoolean());
+        verify(reindexManager, never()).reindexFull(anyBoolean());
         assertEquals(ActionResult.BAD_REQUEST.getResultCode(), result.getResultCode());
     }
 
@@ -105,8 +112,45 @@ public class ReindexActionTest {
     public void unknownAction_returnsBadRequest() throws Exception {
         ActionResult result = execute(params("somethingelse"));
 
-        verify(reindexManager, never()).putNodeForReindex(anyString());
-        verify(reindexManager, never()).reindexFull();
+        verify(reindexManager, never()).putNodeForReindex(anyString(), anyBoolean());
+        verify(reindexManager, never()).reindexFull(anyBoolean());
         assertEquals(ActionResult.BAD_REQUEST.getResultCode(), result.getResultCode());
+    }
+
+    @Test
+    public void addReindexWithCheckConsistencyTrue_requestsConsistencyCheck() throws Exception {
+        ActionResult result = execute(params("addreindex:node123", "true"));
+
+        verify(reindexManager, times(1)).putNodeForReindex("node123", true);
+        assertEquals(200, result.getResultCode());
+    }
+
+    @Test
+    public void reindexFullWithCheckConsistencyTrue_requestsConsistencyCheck() throws Exception {
+        ActionResult result = execute(params("reindexfull", "true"));
+
+        verify(reindexManager, times(1)).reindexFull(true);
+        assertEquals(200, result.getResultCode());
+    }
+
+    @Test
+    public void checkConsistencyOtherThanTrue_doesNotRequestConsistencyCheck() throws Exception {
+        execute(params("addreindex:node123", "yes"));
+
+        verify(reindexManager, times(1)).putNodeForReindex("node123", false);
+    }
+
+    @Test
+    public void checkConsistencyIsCaseInsensitive() throws Exception {
+        execute(params("reindexfull", "TRUE"));
+
+        verify(reindexManager, times(1)).reindexFull(true);
+    }
+
+    @Test
+    public void reindexFullWithCheckConsistencyFalse_doesNotRequestConsistencyCheck() throws Exception {
+        execute(params("reindexfull", "false"));
+
+        verify(reindexManager, times(1)).reindexFull(false);
     }
 }
