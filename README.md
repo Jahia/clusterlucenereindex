@@ -3,7 +3,7 @@
 A Jahia community module that lets a server administrator trigger a Lucene
 re-indexation on the nodes of a Jahia cluster, individually or all at once.
 
-This module must be installed on a Jahia **cluster** environment (>= 8.1.0.0) and
+This module must be installed on a Jahia **cluster** environment (>= 8.2.3.0) and
 activated for the **systemsite**.
 
 ## How it works
@@ -18,6 +18,17 @@ activated for the **systemsite**.
   configurable via OSGi, default 30s) polls the queue and, when it finds an entry for *its
   own* member id, triggers the local Lucene reindex and removes the entry. This is how each
   node reindexes its own search index.
+
+## Consistency check
+
+By default, a reindexation runs **no** repository consistency check. On a large repository
+the check can take much longer than the reindexation itself (for example 13 h for the check
+against about 1 h for the reindex).
+
+To run the check after the reindexation, tick **Run a repository consistency check after the
+reindexation** before you click a *Reindex* button. The choice is stored in the queue entry
+(`checkConsistency` property), so the target cluster member applies it. If a member is
+already queued, a new request with the check turns the check on for that entry.
 
 ## Permissions
 

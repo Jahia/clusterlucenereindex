@@ -54,6 +54,13 @@
   <h3>The following cluster nodes can be reindexed:</h3>
   <form id="clusterReindexForm" action="${actionUrl}" method="post">
   <input type="hidden" id="csrfTokenField" value="${fn:escapeXml(csrfToken)}"/>
+  <div class="checkbox">
+    <label for="checkConsistencyField">
+      <input type="checkbox" id="checkConsistencyField" name="checkConsistency" value="true" aria-describedby="checkConsistencyHelp"/>
+      Run a repository consistency check after the reindexation
+    </label>
+    <p id="checkConsistencyHelp" class="help-block">Off by default. On a large repository, the consistency check can take much longer than the reindexation itself.</p>
+  </div>
   <table class="table table-bordered table-striped table-sortable" aria-label="Cluster nodes available for reindexing">
      <thead>
         <tr>
@@ -100,10 +107,14 @@
             lastAction = null;
             return;
         }
-        var $buttons = $form.find('button[type="submit"]').prop('disabled', true);
+        var $buttons = $form.find('button[type="submit"], #checkConsistencyField').prop('disabled', true);
         var $msg = $('#clusterReindexMsg')
             .html('<div class="alert alert-info">Reindexation requested, please wait...</div>');
-        $.post($form.attr('action'), {action: action, csrfToken: $('#csrfTokenField').val()})
+        $.post($form.attr('action'), {
+            action: action,
+            csrfToken: $('#csrfTokenField').val(),
+            checkConsistency: $('#checkConsistencyField').is(':checked') ? 'true' : 'false'
+        })
             .done(function() {
                 $msg.html('<div class="alert alert-success">Reindex successfully triggered.</div>');
             })

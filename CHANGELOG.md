@@ -4,6 +4,17 @@ All notable changes to the clusterlucenereindex module are documented in this fi
 
 ## [Unreleased]
 
+### Changed
+- **A reindexation no longer forces a consistency check** ([#2](https://github.com/Jahia/clusterlucenereindex/issues/2)).
+  The watchdog now calls `JahiaRepositoryImpl.scheduleReindexing(boolean)` instead of
+  `scheduleReindexing()`, which always ran the check. On a large repository the check can take
+  much longer than the reindex. A new checkbox, unchecked by default, lets the administrator
+  turn the check on, as in Jahia Tools. The choice is stored on the queue entry
+  (`jnt:nodeToReindex`, new optional `checkConsistency` property), so the target member applies
+  it. Entries queued by an older version run no check.
+- **The module now requires Jahia 8.2.3.0** (parent `jahia-modules` 8.2.3.0).
+  `scheduleReindexing(boolean)` does not exist on the 8.2.0.x line.
+
 ### Security
 - **The `clusterReindex` action now requires the `adminUsers` permission.** Triggering a
   (cluster-wide) Lucene reindex is a heavy, privileged operation; previously the action

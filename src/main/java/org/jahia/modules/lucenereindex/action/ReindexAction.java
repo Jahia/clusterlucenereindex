@@ -27,6 +27,9 @@ public class ReindexAction extends Action {
 
     private static final Logger logger = LoggerFactory.getLogger(ReindexAction.class);
 
+    /** Request parameter; only the value {@code true} turns the consistency check on. */
+    static final String PARAM_CHECK_CONSISTENCY = "checkConsistency";
+
     @Reference
     private ReindexManager reindexManager;
 
@@ -78,6 +81,7 @@ public class ReindexAction extends Action {
         }
 
         String action = actionValues.get(0);
+        boolean checkConsistency = isConsistencyCheckRequested(parameters);
 
         if (action.startsWith("addreindex:")) {
             String nodeId = action.substring("addreindex:".length()).trim();
@@ -85,14 +89,23 @@ public class ReindexAction extends Action {
                 logger.warn("ReindexAction: addreindex received empty nodeId");
                 return ActionResult.BAD_REQUEST;
             }
-            reindexManager.putNodeForReindex(nodeId);
+            reindexManager.putNodeForReindex(nodeId, checkConsistency);
         } else if ("reindexfull".equals(action)) {
-            reindexManager.reindexFull();
+            reindexManager.reindexFull(checkConsistency);
         } else {
             logger.warn("ReindexAction: unknown action value '{}'", action);
             return ActionResult.BAD_REQUEST;
         }
 
         return new ActionResult(200, null, new JSONObject());
+    }
+
+    /**
+     * The consistency check is off unless the request explicitly asks for it: on a large
+     * repository the check can take much longer than the re-index.
+     */
+    private static boolean isConsistencyCheckRequested(Map<String, List<String>> parameters) {
+        List<String> values = parameters.get(PARAM_CHECK_CONSISTENCY);
+        return values != null && !values.isEmpty() && "true".equalsIgnoreCase(values.get(0));
     }
 }

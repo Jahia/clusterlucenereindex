@@ -1,5 +1,6 @@
 package org.jahia.modules.lucenereindex.flow;
 
+import static org.mockito.ArgumentMatchers.anyBoolean;
 import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.mock;
@@ -26,6 +27,7 @@ public class ReindexManagerTest {
     private static final String ADMIN_PATH = "/settings/reindexAdmin";
     private static final String NODE_TYPE = "jnt:nodeToReindex";
     private static final String PROP_NODE_ID = "nodeId";
+    private static final String PROP_CHECK_CONSISTENCY = "checkConsistency";
 
     private ReindexManager manager;
     private JCRSessionWrapper session;
@@ -62,10 +64,11 @@ public class ReindexManagerTest {
         JCRNodeWrapper created = mock(JCRNodeWrapper.class);
         when(admin.addNode(anyString(), eq(NODE_TYPE))).thenReturn(created);
 
-        manager.addNodeForReindexIfAbsent(session, "node-a");
+        manager.addNodeForReindexIfAbsent(session, "node-a", false);
 
         verify(admin).addNode(anyString(), eq(NODE_TYPE));
         verify(created).setProperty(PROP_NODE_ID, "node-a");
+        verify(created).setProperty(PROP_CHECK_CONSISTENCY, false);
         verify(created).saveSession();
     }
 
@@ -75,7 +78,7 @@ public class ReindexManagerTest {
         JCRNodeIteratorWrapper queued = children(existing);
         when(admin.getNodes()).thenReturn(queued);
 
-        manager.addNodeForReindexIfAbsent(session, "node-a");
+        manager.addNodeForReindexIfAbsent(session, "node-a", false);
 
         verify(admin, never()).addNode(anyString(), anyString());
     }
@@ -88,9 +91,47 @@ public class ReindexManagerTest {
         JCRNodeWrapper created = mock(JCRNodeWrapper.class);
         when(admin.addNode(anyString(), eq(NODE_TYPE))).thenReturn(created);
 
-        manager.addNodeForReindexIfAbsent(session, "node-a");
+        manager.addNodeForReindexIfAbsent(session, "node-a", false);
 
         verify(admin).addNode(anyString(), eq(NODE_TYPE));
         verify(created).setProperty(PROP_NODE_ID, "node-a");
+    }
+
+    @Test
+    public void storesConsistencyCheckRequestOnNewEntry() throws Exception {
+        JCRNodeIteratorWrapper empty = children();
+        when(admin.getNodes()).thenReturn(empty);
+        JCRNodeWrapper created = mock(JCRNodeWrapper.class);
+        when(admin.addNode(anyString(), eq(NODE_TYPE))).thenReturn(created);
+
+        manager.addNodeForReindexIfAbsent(session, "node-a", true);
+
+        verify(created).setProperty(PROP_CHECK_CONSISTENCY, true);
+        verify(created).saveSession();
+    }
+
+    @Test
+    public void turnsOnConsistencyCheckOfAlreadyQueuedEntry() throws Exception {
+        JCRNodeWrapper existing = existingEntry("node-a");
+        JCRNodeIteratorWrapper queued = children(existing);
+        when(admin.getNodes()).thenReturn(queued);
+
+        manager.addNodeForReindexIfAbsent(session, "node-a", true);
+
+        verify(admin, never()).addNode(anyString(), anyString());
+        verify(existing).setProperty(PROP_CHECK_CONSISTENCY, true);
+        verify(existing).saveSession();
+    }
+
+    @Test
+    public void keepsConsistencyCheckOfAlreadyQueuedEntryWhenNotRequested() throws Exception {
+        JCRNodeWrapper existing = existingEntry("node-a");
+        JCRNodeIteratorWrapper queued = children(existing);
+        when(admin.getNodes()).thenReturn(queued);
+
+        manager.addNodeForReindexIfAbsent(session, "node-a", false);
+
+        verify(existing, never()).setProperty(eq(PROP_CHECK_CONSISTENCY), anyBoolean());
+        verify(existing, never()).saveSession();
     }
 }

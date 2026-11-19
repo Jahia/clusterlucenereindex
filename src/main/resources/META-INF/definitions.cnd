@@ -8,4 +8,5 @@
 
 [jnt:nodeToReindex] > jnt:content
  - nodeId (string) mandatory
+ - checkConsistency (boolean)
 

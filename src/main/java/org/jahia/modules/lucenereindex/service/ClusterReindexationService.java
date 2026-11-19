@@ -39,6 +39,7 @@ public class ClusterReindexationService {
 
     private static final String NODE_PATH = "/settings/reindexAdmin";
     private static final String PROP_NODE_ID = "nodeId";
+    private static final String PROP_CHECK_CONSISTENCY = "checkConsistency";
 
     private ScheduledExecutorService watchdog;
 
@@ -126,20 +127,32 @@ public class ClusterReindexationService {
 
     private Boolean claimAndReindex(JCRSessionWrapper session, JCRNodeWrapper node, String currentId)
             throws RepositoryException {
-        logger.info("Reindex started on node {}", currentId);
+        boolean checkConsistency = isConsistencyCheckRequested(node);
+        logger.info("Reindex started on node {} (consistency check: {})", currentId, checkConsistency);
         // Schedule the local reindex FIRST and only drop the queue entry once it
         // has been triggered, so a failure here does not silently lose the request.
-        scheduleLocalReindexing();
+        scheduleReindexing(((SpringJackrabbitRepository) JCRSessionFactory.getInstance()
+                .getDefaultProvider().getRepository()).getRepository(), checkConsistency);
         node.remove();
         session.save();
         return Boolean.TRUE;
     }
 
-    private void scheduleLocalReindexing() throws RepositoryException {
-        Object repository = ((SpringJackrabbitRepository) JCRSessionFactory.getInstance()
-                .getDefaultProvider().getRepository()).getRepository();
+    /**
+     * Reads the consistency-check flag of a queue entry. An entry without the flag (queued by an
+     * older version of the module) runs no check, which is the default.
+     */
+    static boolean isConsistencyCheckRequested(JCRNodeWrapper node) throws RepositoryException {
+        return node.hasProperty(PROP_CHECK_CONSISTENCY) && node.getProperty(PROP_CHECK_CONSISTENCY).getBoolean();
+    }
+
+    /**
+     * Schedules the re-index of the local repository. {@code scheduleReindexing(boolean)} is
+     * available from Jahia 8.2.1.0; the no-argument variant always forces a consistency check.
+     */
+    static void scheduleReindexing(Object repository, boolean checkConsistency) throws RepositoryException {
         if (repository instanceof JahiaRepositoryImpl) {
-            ((JahiaRepositoryImpl) repository).scheduleReindexing();
+            ((JahiaRepositoryImpl) repository).scheduleReindexing(checkConsistency);
         } else {
             logger.error("Unexpected repository implementation {} - cannot schedule reindexing",
                     repository != null ? repository.getClass().getName() : "null");
