@@ -139,4 +139,18 @@ public class ReindexActionTest {
 
         verify(reindexManager, times(1)).putNodeForReindex("node123", false);
     }
+
+    @Test
+    public void checkConsistencyIsCaseInsensitive() throws Exception {
+        execute(params("reindexfull", "TRUE"));
+
+        verify(reindexManager, times(1)).reindexFull(true);
+    }
+
+    @Test
+    public void reindexFullWithCheckConsistencyFalse_doesNotRequestConsistencyCheck() throws Exception {
+        execute(params("reindexfull", "false"));
+
+        verify(reindexManager, times(1)).reindexFull(false);
+    }
 }
