@@ -1,3 +1,7 @@
+import {enableModule} from '@jahia/cypress';
+
+// The settings template lives under server-settings-base, so it only resolves once the module is
+// enabled on systemsite, as the README requires of an install; the harness has to do the same.
 describe('Cluster Lucene Reindex - settings page', () => {
     // Registered by registerExtensions.js as the adminRoute iframe target:
     // '/cms/adminframe/{workspace}/{lang}/settings.clusterlucenereindex.html'.
@@ -6,6 +10,7 @@ describe('Cluster Lucene Reindex - settings page', () => {
     const settingsPageUrl = '/cms/adminframe/default/en/settings.clusterlucenereindex.html';
 
     before(() => {
+        enableModule('clusterlucenereindex', 'systemsite');
         cy.login();
     });
 

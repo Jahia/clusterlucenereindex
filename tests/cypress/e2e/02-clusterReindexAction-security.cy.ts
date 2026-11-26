@@ -1,3 +1,5 @@
+import {enableModule} from '@jahia/cypress';
+
 // ReindexAction.doExecute() gates every request behind two checks before any reindex
 // parameter is even parsed: (1) the caller must be an authenticated admin member, and
 // (2) the request must carry a csrfToken matching the one stored in the caller's HTTP
@@ -13,6 +15,10 @@
 const actionUrl = '/cms/render/default/en/settings.clusterReindex.do';
 
 describe('Cluster Lucene Reindex - action security', () => {
+    before(() => {
+        enableModule('clusterlucenereindex', 'systemsite');
+    });
+
     it('rejects an unauthenticated request with 403, before any reindex parameter is read', () => {
         cy.clearCookies();
 
