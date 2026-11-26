@@ -11,6 +11,11 @@ describe('Cluster Lucene Reindex - settings page', () => {
 
     before(() => {
         enableModule('clusterlucenereindex', 'systemsite');
+    });
+
+    // Per test: Cypress's test isolation clears the session between tests, so a login in before()
+    // only covered the first one and the second visited the page as guest (404).
+    beforeEach(() => {
         cy.login();
     });
 
